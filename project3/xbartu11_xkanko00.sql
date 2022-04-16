@@ -189,12 +189,14 @@ INSERT INTO MAJITEL (Uzivatel)
 VALUES (9);
 
 INSERT INTO NEMOVITOST (Kategorie, Stav_objektu, Cena, Ulice, Cislo_popisne, Orientactni_cislo, Mesto, PSC, Majitel)
-values ('Byt', 'Renovovaný s drobnými nedostatky', '12000000', 'Jiráskova', '482', '65', 'Jabkenice', '29445', 2);
+values ('Byt', 'Renovovaný s drobnými nedostatky', '12000000', 'Prokopská', '1935', '4', 'Necín', '26213', 2);
+INSERT INTO NEMOVITOST (Kategorie, Stav_objektu, Cena, Ulice, Cislo_popisne, Orientactni_cislo, Mesto, PSC, Majitel)
+values ('Byt', 'Renovovaný', '6000000', 'Jiráskova', '482', '65', 'Jabkenice', '29445', 2);
 INSERT INTO NEMOVITOST (Kategorie, Typ, Stav_objektu, Cena, Ulice, Cislo_popisne, Orientactni_cislo, Mesto, PSC,
                         Majitel)
 values ('Dům', 'Rodinný', 'Novostavba', '350000000', 'Barákova', '783', '40', 'Úvaly', '25082', 2);
 INSERT INTO NEMOVITOST (Kategorie, Stav_objektu, Cena, Ulice, Cislo_popisne, Orientactni_cislo, Mesto, PSC, Majitel)
-values ('Ostatní', 'Vhodný na demolici', '1200', 'Dačícká', '1211', '150', 'Chrudim', '53701', 3);
+values ('Ostatní', 'Vhodný na demolici', '12000', 'Dačícká', '1211', '150', 'Chrudim', '53701', 3);
 
 INSERT INTO NABIDKA (Cena, Nemovitost, Zajemce)
 VALUES ('35000000', 1, 1);
@@ -206,13 +208,79 @@ VALUES ('25000000', 3, 2);
 INSERT INTO SMLOUVA (Datum, Stav, Zamestnanec, Zajemce, Nemovitost)
 VALUES (date'2021-10-11', 'Otevřená', 1, 2, 1);
 INSERT INTO SMLOUVA (Datum, Stav, Zamestnanec, Zajemce, Nemovitost)
+VALUES (date'2021-09-11', 'Uzavřená', 2, 2, 3);
+INSERT INTO SMLOUVA (Datum, Stav, Zamestnanec, Zajemce, Nemovitost)
 VALUES (date'2021-03-01', 'Otevřená', 2, 3, 2);
+INSERT INTO SMLOUVA (Datum, Stav, Zamestnanec, Zajemce, Nemovitost)
+VALUES (date'2021-03-01', 'Uzavřená', 1, 3, 2);
 INSERT INTO SMLOUVA (Datum, Stav, Zamestnanec, Zajemce, Nemovitost)
 VALUES (date'2022-01-01', 'Otevřená', 3, 1, 3);
 
 INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
-VALUES (TO_DATE( '2022-01-09 19:00', 'yyyy/mm/dd hh24:mi'), 1, 2, 3);
+VALUES (TO_DATE( '2022-02-10 19:00', 'yyyy/mm/dd hh24:mi'), 2, 2, 3);
 INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
-VALUES (TO_DATE( '2022-01-10 18:00', 'yyyy/mm/dd hh24:mi'), 3, 2, 1);
+VALUES (TO_DATE( '2022-05-10 18:00', 'yyyy/mm/dd hh24:mi'), 3, 2, 1);
 INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
-VALUES (TO_DATE( '2022-02-10 17:00', 'yyyy/mm/dd hh24:mi'), 1, 1, 2);
+VALUES (TO_DATE( '2022-04-30 17:00', 'yyyy/mm/dd hh24:mi'), 1, 1, 2);
+INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
+VALUES (TO_DATE( '2022-02-10 17:00', 'yyyy/mm/dd hh24:mi'), 2, 3, 3);
+INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
+VALUES (TO_DATE( '2022-02-10 19:00', 'yyyy/mm/dd hh24:mi'), 1, 2, 3);
+INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
+VALUES (TO_DATE( '2022-02-10 21:00', 'yyyy/mm/dd hh24:mi'), 1, 1, 1);
+
+-- Zobrazí adresu a čas všech naplánováných prohlídek.
+SELECT ULICE, CISLO_POPISNE, ORIENTACTNI_CISLO, MESTO, PSC, DATUM_CAS
+FROM PROHLIDKA
+         JOIN NEMOVITOST N ON PROHLIDKA.NEMOVITOST = N.NEMOVITOSTID
+WHERE DATUM_CAS >= CURRENT_DATE;
+
+-- Zobrazí informace o všech nabízených nemovitostech
+SELECT NEMOVITOST, ULICE, CISLO_POPISNE, ORIENTACTNI_CISLO, MESTO, PSC, N.CENA
+FROM NEMOVITOST
+         JOIN NABIDKA N ON NEMOVITOST.NEMOVITOSTID = N.NEMOVITOST;
+
+-- Zobrazí vlastníka nemovitosti v ulici jiráskova pro kontaktovaní majitele.
+SELECT JMENO, PRIJMENI, TELEFONI_CISLO
+FROM UZIVATEL
+         JOIN MAJITEL M ON UZIVATEL.UZIVATELID = M.UZIVATEL
+         JOIN NEMOVITOST N ON M.MAJITELID = N.MAJITEL
+WHERE ULICE = 'JIRÁSKOVA';
+
+-- Zobrazí součet všech cen jednotlivých kategorií nemovitostí.
+SELECT KATEGORIE, SUM(CENA) AS SUMA_CEN
+FROM NEMOVITOST
+GROUP BY KATEGORIE;
+
+-- Zobrazí kolik prohlídek jednotliví záměstanci uskutečnili v dánem časovém intervalu, kvůli výplatě.
+SELECT ZAMESTNANECID, COUNT(PROHLIDKAID) AS PROHLIDEK_CELKEM
+FROM PROHLIDKA
+         JOIN ZAMESTNANEC Z ON Z.ZAMESTNANECID = PROHLIDKA.ZAMESTNANEC
+WHERE DATUM_CAS BETWEEN TO_DATE('2022-02-10 00:00', 'YYYY/MM/DD HH24:MI')
+          AND TO_DATE('2022-02-11 00:00', 'YYYY/MM/DD HH24:MI')
+GROUP BY ZAMESTNANECID;
+
+-- Vyber nemovitosti s největší nabídkou. Výběr nemovitosti ze které bude největší provize.
+SELECT NEMOVITOSTID,
+       KATEGORIE,
+       TYP,
+       STAV_OBJEKTU,
+       NEMOVITOST.CENA,
+       ULICE,
+       CISLO_POPISNE,
+       ORIENTACTNI_CISLO,
+       MESTO,
+       PSC
+FROM NEMOVITOST
+         JOIN NABIDKA N ON NEMOVITOST.NEMOVITOSTID = N.NEMOVITOST
+WHERE N.CENA IN (SELECT MAX(CENA) FROM NABIDKA);
+
+-- Zobrazí zaměstance, kteří neuzavřeli žádnou smlouvu.
+SELECT ZAMESTNANECID, JMENO, PRIJMENI, TELEFONI_CISLO
+FROM ZAMESTNANEC Z,
+     UZIVATEL U
+WHERE Z.UZIVATEL = U.UZIVATELID
+  AND NOT EXISTS(SELECT *
+                 FROM SMLOUVA S
+                 WHERE STAV = 'Uzavřená'
+                   AND Z.ZAMESTNANECID = S.ZAMESTNANEC)
