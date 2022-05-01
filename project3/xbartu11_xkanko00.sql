@@ -283,4 +283,102 @@ WHERE Z.UZIVATEL = U.UZIVATELID
   AND NOT EXISTS(SELECT *
                  FROM SMLOUVA S
                  WHERE STAV = 'Uzavřená'
-                   AND Z.ZAMESTNANECID = S.ZAMESTNANEC)
+                   AND Z.ZAMESTNANECID = S.ZAMESTNANEC);
+
+--Procedury--
+--procedura na vypsani poctu zamestnancu, prohlidek a smluv a jejich prumer na zamestnance
+CREATE OR REPLACE PROCEDURE "zamestnanec_smlouva_prohlidka"
+AS
+    "prohlidky" NUMBER;
+    "zamestnanci" NUMBER;
+    "smlouvy" NUMBER;
+    "prohlidky_na_zamestnance" NUMBER;
+    "smlouvy_na_zamestnance" NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO "zamestnanci" FROM Zamestnanec;
+    SELECT COUNT(*) INTO "prohlidky" FROM Prohlidka;
+    SELECT COUNT(*) INTO "smlouvy" FROM Smlouva;
+
+    "prohlidky_na_zamestnance" := "prohlidky" / "zamestnanci";
+    "smlouvy_na_zamestnance" := "smlouvy" / "zamestnanci";
+
+    DBMS_OUTPUT.PUT_LINE( 'Pocet zamestnancu: ' || "zamestnanci"
+                        || ' smluv: ' || "smlouvy"
+                        || ' prohlidek: ' || "prohlidky");
+
+    DBMS_OUTPUT.PUT_LINE( 'Prumerne kazdy zamestnanec vyridil: ' || "prohlidky_na_zamestnance"
+                        || ' prohlidek a ' || "smlouvy_na_zamestnance"
+                        || ' smluv');
+
+    EXCEPTION WHEN ZERO_DIVIDE THEN
+    BEGIN
+        IF "zamestnanci" = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('V tabulce nejsou zamestnanci');
+        end if;
+    end;
+end;
+
+BEGIN
+    "zamestnanec_smlouva_prohlidka";
+end;
+
+CREATE OR REPLACE PROCEDURE provize_prodej (zamestnanec_jmeno varchar2, procenta_provize number)
+IS
+    id_zamestnance Zamestnanec.ZamestnanecID%TYPE;
+    provize_prodej NUMBER;
+    provize_celkem NUMBER;
+    cena_nemovitest Nemovitost.Cena%Type;
+    CURSOR "nemovitosti" IS SELECT Cena FROM Nemovitost WHERE NemovitostID IN (SELECT Nemovitost FROM Smlouva where Zamestnanec = id_zamestnance);
+BEGIN
+    Select Distinct ZamestnanecID INTO id_zamestnance
+    from Zamestnanec JOIN Uzivatel U on U.UzivatelID = Uzivatel
+    WHERE U.Jmeno = zamestnanec_jmeno;
+
+    provize_celkem := 0;
+
+    OPEN "nemovitosti";
+    LOOP
+        FETCH "nemovitosti" INTO cena_nemovitest;
+
+        EXIT WHEN "nemovitosti"%NOTFOUND;
+
+        provize_prodej := cena_nemovitest * procenta_provize / 100;
+        provize_celkem := provize_celkem + provize_prodej;
+    end loop;
+    CLOSE "nemovitosti";
+
+    DBMS_OUTPUT.PUT_LINE(
+        zamestnanec_jmeno || ' si s provizi ' || procenta_provize || '% vydelal ' || provize_celkem || 'kč');
+
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE(
+            zamestnanec_jmeno || ' neprodal zadnou nemovitost');
+    end;
+end;
+
+BEGIN
+    provize_prodej('Petr', 20);
+end;
+
+EXPLAIN PLAN FOR
+SELECT ZAMESTNANECID, COUNT(PROHLIDKAID) AS PROHLIDEK_CELKEM
+FROM PROHLIDKA
+         JOIN ZAMESTNANEC Z ON Z.ZAMESTNANECID = PROHLIDKA.ZAMESTNANEC
+WHERE DATUM_CAS BETWEEN TO_DATE('2022-02-10 00:00', 'YYYY/MM/DD HH24:MI')
+          AND TO_DATE('2022-02-11 00:00', 'YYYY/MM/DD HH24:MI')
+GROUP BY ZAMESTNANECID;
+
+SELECT PLAN_TABLE_OUTPUT FROM TABLE ( DBMS_XPLAN.DISPLAY() );
+
+CREATE INDEX zamestnanec_identifikatore on Prohlidka(Zamestnanec, Datum_cas);
+
+EXPLAIN PLAN FOR
+SELECT ZAMESTNANECID, COUNT(PROHLIDKAID) AS PROHLIDEK_CELKEM
+FROM PROHLIDKA
+         JOIN ZAMESTNANEC Z ON Z.ZAMESTNANECID = PROHLIDKA.ZAMESTNANEC
+WHERE DATUM_CAS BETWEEN TO_DATE('2022-02-10 00:00', 'YYYY/MM/DD HH24:MI')
+          AND TO_DATE('2022-02-11 00:00', 'YYYY/MM/DD HH24:MI')
+GROUP BY ZAMESTNANECID;
+
+SELECT PLAN_TABLE_OUTPUT FROM TABLE ( DBMS_XPLAN.DISPLAY() );
