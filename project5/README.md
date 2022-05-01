@@ -1,0 +1,2 @@
+# 5. část - Dokumentace popisující finální schéma databáze
+* Dokumentace popisující jednotlivé body řešení ze skriptu ve 4. části vč. jejich zdůvodnění (např. popisuje výstup příkazu EXPLAIN PLAN bez indexu, důvod vytvoření zvoleného indexu, a výstup EXPLAIN PLAN s indexem, atd.).
