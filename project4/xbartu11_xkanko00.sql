@@ -285,11 +285,6 @@ WHERE Z.UZIVATEL = U.UZIVATELID
                  WHERE STAV = 'Uzavřená'
                    AND Z.ZAMESTNANECID = S.ZAMESTNANEC);
 
-
-
-INSERT INTO PROHLIDKA (Datum_cas, Zamestnanec, Zajemce, Nemovitost)
-VALUES (TO_DATE('2022-02-10 19:10', 'yyyy/mm/dd hh24:mi'), 3, 1, 3);
-
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------- TRIGGERY -------------------------------------------------------
 
@@ -539,31 +534,28 @@ GRANT ALL ON ZAMESTNANEC TO XKANKO00;
 
 ------------------------------------------------------------------------------------------------------------------------
 
-SELECT ZamestnanecID, Jmeno, Prijmeni, Datum_cas, Ulice, Cislo_popisne, Orientactni_cislo, Mesto, PSC FROM Prohlidka P
-    JOIN Zamestnanec Z on Z.ZamestnanecID = P.Zamestnanec
-    JOIN Uzivatel U on U.UzivatelID = Z.Uzivatel
-    JOIN Nemovitost N on P.Nemovitost = N.NemovitostID
-WHERE Datum_cas > CURRENT_DATE
-ORDER BY Datum_cas;
 
 ------------------------------------------------- MATERILOVANÝ POHLED --------------------------------------------------
 DROP MATERIALIZED VIEW Prohlidka_info;
 
 CREATE MATERIALIZED VIEW LOG ON Smlouva WITH PRIMARY KEY, ROWID(STAV) INCLUDING NEW VALUES;
 
-CREATE MATERIALIZED VIEW Prohlidka_info
+CREATE MATERIALIZED VIEW Smlouva_info
 REFRESH FAST ON COMMIT AS   -- Ihned po commitu dojde k jeho aktualizaci
     SELECT Stav, COUNT(*) FROM Smlouva
 GROUP BY Stav;
 
+GRANT SELECT, UPDATE ON Smlouva_info TO XKANKO00;
+
+-- Nyní je možné praacovat i z pohledu kolegy, ale se syntaxí xbartu11."nazev tabulky"
 -- Zobrazíme pohled
--- SELECT * FROM Prohlidka_info;
+-- SELECT * FROM Smlouva_info;
 -- Aktualizujeme data v tabulce Smlouva
 -- UPDATE Smlouva SET STAV = 'Uzavřená' WHERE SmlouvaID = 1;
 -- Data se nezměnily
--- SELECT * FROM Prohlidka_info;
+-- SELECT * FROM Smlouva_info;
 -- Provedeme změnu
 -- COMMIT;
 -- Data jsou již aktuální
--- SELECT * FROM Prohlidka_info;
+-- SELECT * FROM Smlouva_info;
 ------------------------------------------------------------------------------------------------------------------------
